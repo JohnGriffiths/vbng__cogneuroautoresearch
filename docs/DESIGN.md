@@ -2,6 +2,12 @@
 
 Status: draft, consolidating brainstorm. Not yet implemented.
 
+**Working name: MkSPARCS** — Mk(ake) + **S**elf-**P**aced **A**uto **R**esearch
+**C**o-**S**cientist. This repo is not yet renamed to reflect it, but any
+library code, CLI, or package built from this design should be named
+`mksparcs` from the start (package name, import name, CLI entry point) so
+no rename is needed later.
+
 ## Goal
 
 A framework for semi-autonomous, long-running "autoresearch" in cognitive
@@ -95,6 +101,44 @@ pre-commit a confirmatory analysis plan and correction procedure per
 question before exploration begins. Anything outside that plan is logged
 and reported as exploratory, never silently promoted to confirmatory.
 
+## 2a. Theory layer: candidate accounts, not just analyses
+
+A flat list of questions invites data dredging dressed up with guardrails —
+"we ran 8 tests" instead of a cumulative research programme. The fix: every
+charter carries a **theory layer** above the question list, and every
+question is tagged with which theoretical account(s) it adjudicates between
+and what pattern each account predicts (strong inference — Platt, 1964: set
+up competing hypotheses and design the test to kill at least one of them).
+
+```yaml
+theory:
+  candidate_accounts:
+    - id: account_a
+      claim: "..."
+    - id: account_b
+      claim: "..."
+
+questions:
+  - id: q1
+    ...
+    adjudicates:
+      account_a: "predicted pattern under this account"
+      account_b: "predicted pattern under this account"
+
+synthesis:
+  doc: "SYNTHESIS.md"
+  update_trigger: "after every N question investigations, or on demand"
+  content: >
+    current standing of each candidate_account given findings so far — an
+    integrative judgment call, not a result list
+```
+
+`SYNTHESIS.md` is a living document per project repo, not a per-question
+report. A **synthesis investigation** is its own claimable unit type: it
+doesn't run new analyses, it reviews completed ones and rewrites the
+standing of each candidate account. This is what keeps the theory layer
+alive instead of being a write-once mission statement.
+
 ## 3. Unit of work: self-contained investigation
 
 Each claimed question (or question × dataset pairing) becomes its own git
@@ -170,6 +214,26 @@ Not yet designed: a shared usage ledger so a slow-burn trigger can check
 current headroom before claiming, rather than firing blindly into a quota
 the fast lane is already saturating. Needed before slow-burn projects
 coexist with fast-lane ones on the same subscription.
+
+## 7. Repo topology: core tool vs. project repos
+
+The whole architecture is repo-centric (branch-per-investigation, GitHub
+Issues as the queue, PR-gated merges), so it matters which repo is "the
+tool" and which is "a research program." They're not the same repo.
+
+- **Core tool repo** (this one, eventually renamed `mksparcs`): charter
+  schema, scheduler/queue conventions, checkpoint log format, worker CLI
+  contract, intake process. Published as an installable CLI
+  (`pip install git+...@v0.1.0` once it exists).
+- **Project repos** (one per research program, e.g. `mksparcs-mnespmfaces`):
+  contain *only* project content — charter, `SYNTHESIS.md`, dataset config,
+  investigation branches/issues, reports. No framework code lives here.
+- A project repo declares which **pinned version/commit** of the core tool
+  it's built against (a line in its README or charter —
+  `framework_version: v0.1.0`). This is what keeps every worker's bootstrap
+  sequence provider-agnostic: clone project repo → ensure the pinned
+  framework version is installed → run the framework CLI against this
+  repo's charter. No vendoring, no drift.
 
 ## Open / not yet decided
 
